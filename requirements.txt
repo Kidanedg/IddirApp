@@ -1,0 +1,24 @@
+# =====================================================
+# IDDIR APP SYSTEMS - REQUIREMENTS
+# =====================================================
+
+# --- Core Framework ---
+streamlit>=1.35,<2.0
+
+# --- Numerical & Data Processing ---
+numpy>=1.26,<2.0
+pandas>=2.2,<3.0
+
+# --- Optional Performance & Compatibility ---
+pyarrow>=15.0        # faster dataframe handling in Streamlit
+protobuf>=4.25       # avoids Streamlit compatibility issues
+
+# --- Date & Time Handling (future-safe) ---
+python-dateutil>=2.8
+
+# --- Visualization (optional future extension) ---
+altair>=5.0          # advanced charts if needed
+
+# =====================================================
+# END
+# =====================================================
