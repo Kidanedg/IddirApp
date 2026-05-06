@@ -1,187 +1,235 @@
+############################################################
+# IDDIR APP SYSTEMS (ADVANCED DEMO VERSION)
+# Includes: Login + Loans + Assets + Simulation
+############################################################
+
 import streamlit as st
 import numpy as np
 import pandas as pd
+from datetime import datetime
 
-# -----------------------------
-# PAGE SETUP
-# -----------------------------
-st.set_page_config(layout="wide")
-st.title("🏥 Iddir Smart System (Mathematical + Simulation Engine)")
+# =========================================================
+# INITIALIZE DATABASE (SESSION)
+# =========================================================
+if "users" not in st.session_state:
+    st.session_state.users = {
+        "admin": {"password": "admin123", "role": "admin"}
+    }
 
-# -----------------------------
-# INTRODUCTION (YOUR TEXT)
-# -----------------------------
-with st.expander("📘 About Iddir System"):
-    st.write("""
-Iddir is a community-based mutual aid system where members contribute to a shared fund,
-which is used to support emergencies such as funerals or health crises.
+if "current_user" not in st.session_state:
+    st.session_state.current_user = None
 
-This system models:
-- Member contributions (strategic + social norms)
-- Fund dynamics with interest
-- Random emergency events (Bernoulli process)
-- Aid disbursement policies
-- Sustainability over time
-""")
+if "members" not in st.session_state:
+    st.session_state.members = {}
 
-# -----------------------------
-# SIDEBAR PARAMETERS
-# -----------------------------
-st.sidebar.header("⚙️ Model Parameters")
+if "fund" not in st.session_state:
+    st.session_state.fund = 1000.0
 
-N = st.sidebar.slider("Number of Members (N)", 2, 50, 5)
-T = st.sidebar.slider("Time Periods (T)", 5, 100, 20)
+if "asset" not in st.session_state:
+    st.session_state.asset = 100000.0
 
-F0 = st.sidebar.number_input("Initial Fund F₀", value=1000.0)
-r = st.sidebar.slider("Interest Rate r", 0.0, 0.2, 0.02)
-p = st.sidebar.slider("Emergency Probability p", 0.0, 1.0, 0.3)
-A_max = st.sidebar.number_input("Max Aid A_max", value=2000.0)
+if "loans" not in st.session_state:
+    st.session_state.loans = []
 
-social_norm = st.sidebar.number_input("Social Norm Contribution", value=50.0)
+# =========================================================
+# LOGIN SYSTEM
+# =========================================================
+def login():
+    st.title("🔐 Iddir Login System")
 
-# -----------------------------
-# MEMBER CAPACITY INPUT
-# -----------------------------
-st.sidebar.subheader("👥 Member Capacities")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
 
-capacities = []
-for i in range(N):
-    cap = st.sidebar.number_input(f"Capacity Member {i+1}", value=100.0, key=i)
-    capacities.append(cap)
+    if st.button("Login"):
+        if username in st.session_state.users:
+            if st.session_state.users[username]["password"] == password:
+                st.session_state.current_user = username
+                st.success("Login successful")
+                st.rerun()
+            else:
+                st.error("Wrong password")
+        else:
+            st.error("User not found")
 
-capacities = np.array(capacities)
+def logout():
+    st.session_state.current_user = None
+    st.rerun()
 
-# -----------------------------
-# CONTRIBUTION STRATEGY
-# -----------------------------
-def contribution_strategy(F_t, prev_c, capacities):
-    contributions = []
+# =========================================================
+# MEMBER MANAGEMENT
+# =========================================================
+def add_member():
+    st.subheader("👥 Add Member")
 
-    for i in range(len(capacities)):
-        max_possible = capacities[i]
+    name = st.text_input("Member Name")
+    capacity = st.number_input("Contribution Capacity", value=100.0)
 
-        # Strategic behavior (simple form)
-        strategic = 0.05 * F_t  # depends on fund size
+    if st.button("Add Member"):
+        st.session_state.members[name] = {
+            "capacity": capacity,
+            "balance": 0
+        }
+        st.success("Member added")
 
-        c = min(max_possible, max(social_norm, strategic))
-        c = max(c, 0)
+def show_members():
+    if st.session_state.members:
+        st.dataframe(pd.DataFrame(st.session_state.members).T)
 
-        contributions.append(c)
+# =========================================================
+# LOAN SYSTEM
+# =========================================================
+def loan_system():
+    st.subheader("💳 Loan System")
 
-    return np.array(contributions)
+    members = list(st.session_state.members.keys())
 
-# -----------------------------
-# FUND UPDATE + EMERGENCY
-# -----------------------------
-def fund_update(F_t, contributions):
-    C_t = np.sum(contributions)
+    if not members:
+        st.warning("Add members first")
+        return
 
-    F_temp = F_t + C_t + r * F_t
+    borrower = st.selectbox("Select Member", members)
+    amount = st.number_input("Loan Amount", value=100.0)
+    interest = st.slider("Interest Rate", 0.0, 0.5, 0.1)
 
-    # Bernoulli(p)
-    E_t = np.random.rand() < p
+    if st.button("Give Loan"):
+        if amount <= st.session_state.fund:
+            loan = {
+                "member": borrower,
+                "amount": amount,
+                "interest": interest,
+                "total_due": amount * (1 + interest),
+                "status": "active",
+                "time": datetime.now()
+            }
+            st.session_state.loans.append(loan)
+            st.session_state.fund -= amount
 
-    if E_t:
-        A_t = min(F_temp, A_max)
-        D_t = A_t
-        F_next = F_temp - D_t
-    else:
-        A_t = 0
-        D_t = 0
-        F_next = F_temp
+            st.success("Loan issued")
+        else:
+            st.error("Not enough fund")
 
-    return F_next, E_t, D_t, A_t, C_t
+    # Show loans
+    if st.session_state.loans:
+        st.subheader("📋 Active Loans")
+        st.dataframe(pd.DataFrame(st.session_state.loans))
 
-# -----------------------------
-# SIMULATION ENGINE
-# -----------------------------
-def run_simulation():
+# =========================================================
+# LOAN REPAYMENT
+# =========================================================
+def repay_loan():
+    st.subheader("💰 Loan Repayment")
+
+    if not st.session_state.loans:
+        st.info("No loans available")
+        return
+
+    loan_ids = list(range(len(st.session_state.loans)))
+    idx = st.selectbox("Select Loan", loan_ids)
+
+    if st.button("Repay Loan"):
+        loan = st.session_state.loans[idx]
+
+        if loan["status"] == "active":
+            st.session_state.fund += loan["total_due"]
+            loan["status"] = "repaid"
+            st.success("Loan repaid")
+        else:
+            st.warning("Already repaid")
+
+# =========================================================
+# SIMULATION MODEL
+# =========================================================
+def run_simulation(F0, S0, T, r, p, A_max):
     F = F0
+    S = S0
+
     history = []
 
-    prev_c = np.zeros(N)
-
     for t in range(T):
-        c = contribution_strategy(F, prev_c, capacities)
 
-        F, E, D, A, C = fund_update(F, c)
+        C_t = sum([m["capacity"] for m in st.session_state.members.values()])
+        I_t = 0.05 * S
+
+        F_temp = F + C_t + r * F + I_t
+
+        E = np.random.rand() < p
+
+        if E:
+            A = min(F_temp, A_max)
+            F = F_temp - A
+        else:
+            A = 0
+            F = F_temp
+
+        S += 0.1 * I_t
 
         history.append({
             "t": t,
             "Fund": F,
-            "Total Contribution": C,
-            "Emergency": int(E),
-            "Aid Paid": D,
-            "Aid Amount": A
+            "Asset": S,
+            "Aid": A
         })
-
-        prev_c = c
 
     return pd.DataFrame(history)
 
-# -----------------------------
-# RUN BUTTON
-# -----------------------------
-if st.button("🚀 Run Simulation"):
+# =========================================================
+# MAIN APP
+# =========================================================
+if st.session_state.current_user is None:
+    login()
+else:
+    st.title("🇪🇹 Iddir App Systems")
 
-    df = run_simulation()
+    st.sidebar.write(f"Logged in as: {st.session_state.current_user}")
+    if st.sidebar.button("Logout"):
+        logout()
 
-    st.subheader("📊 Simulation Results")
-    st.dataframe(df)
+    menu = st.sidebar.radio("Menu", [
+        "Dashboard",
+        "Members",
+        "Loans",
+        "Simulation"
+    ])
 
-    # -------------------------
-    # VISUALIZATION
-    # -------------------------
-    col1, col2 = st.columns(2)
+    # ---------------- DASHBOARD ----------------
+    if menu == "Dashboard":
+        st.subheader("📊 Overview")
 
-    with col1:
-        st.line_chart(df.set_index("t")["Fund"])
+        col1, col2 = st.columns(2)
+        col1.metric("Fund", f"{st.session_state.fund:.2f}")
+        col2.metric("Asset", f"{st.session_state.asset:.2f}")
 
-    with col2:
-        st.bar_chart(df.set_index("t")["Total Contribution"])
+    # ---------------- MEMBERS ----------------
+    elif menu == "Members":
+        add_member()
+        show_members()
 
-    # -------------------------
-    # EMERGENCY EVENTS
-    # -------------------------
-    st.subheader("🚨 Emergency Events")
-    st.bar_chart(df.set_index("t")["Emergency"])
+    # ---------------- LOANS ----------------
+    elif menu == "Loans":
+        loan_system()
+        repay_loan()
 
-    # -------------------------
-    # SUSTAINABILITY METRICS
-    # -------------------------
-    st.subheader("📈 Sustainability Analysis")
+    # ---------------- SIMULATION ----------------
+    elif menu == "Simulation":
+        st.subheader("📈 Simulation")
 
-    final_fund = df["Fund"].iloc[-1]
-    total_aid = df["Aid Paid"].sum()
-    total_contrib = df["Total Contribution"].sum()
+        T = st.slider("Periods", 5, 50, 20)
+        r = st.slider("Interest Rate", 0.0, 0.2, 0.02)
+        p = st.slider("Emergency Probability", 0.0, 1.0, 0.3)
+        A_max = st.number_input("Max Aid", value=2000.0)
 
-    st.write(f"Final Fund: {final_fund:.2f}")
-    st.write(f"Total Aid Paid: {total_aid:.2f}")
-    st.write(f"Total Contributions: {total_contrib:.2f}")
+        if st.button("Run Simulation"):
+            df = run_simulation(
+                st.session_state.fund,
+                st.session_state.asset,
+                T, r, p, A_max
+            )
 
-    # -------------------------
-    # RISK ANALYSIS
-    # -------------------------
-    st.subheader("⚠️ Risk & Stability")
+            st.line_chart(df.set_index("t")[["Fund", "Asset"]])
+            st.dataframe(df)
 
-    if final_fund <= 0:
-        st.error("⚠️ System is NOT sustainable")
-    elif final_fund < F0:
-        st.warning("⚠️ Fund is declining")
-    else:
-        st.success("✅ System is sustainable")
-
-# -----------------------------
-# POLICY OPTIMIZATION (BASIC)
-# -----------------------------
-st.subheader("🧠 Policy Experimentation")
-
-test_norm = st.slider("Test Social Norm", 0.0, 200.0, 50.0)
-
-if st.button("Test Policy"):
-
-    social_norm = test_norm
-    df = run_simulation()
-
-    st.line_chart(df.set_index("t")["Fund"])
-    st.write("Final Fund:", df["Fund"].iloc[-1])
+# =========================================================
+# FOOTER
+# =========================================================
+st.markdown("---")
+st.markdown("Iddir App Systems | Advanced Demo Version 🇪🇹")
