@@ -2,11 +2,20 @@
 # IDDIR APP SYSTEMS (FULL DEMO VERSION)
 # Login + Registration + Loans + Assets + Simulation
 ############################################################
+
+import streamlit as st
+import numpy as np
+import pandas as pd
+from datetime import datetime
+
 # =========================================================
-# WELCOME & PROJECT CONTEXT
+# PAGE CONFIG (MUST COME FIRST)
 # =========================================================
 st.set_page_config(page_title="Iddir App Systems", layout="wide")
 
+# =========================================================
+# WELCOME & PROJECT CONTEXT
+# =========================================================
 st.title("Iddir App Systems")
 
 st.markdown("""
@@ -36,14 +45,7 @@ emergency support mechanisms.
 This project is developed as part of a **Technology Transfer Initiative**.  
 We gratefully acknowledge the support of the **Technology Transfer Office, Aksum University**,  
 for funding and facilitating this project.
-
----
-
 """)
-import streamlit as st
-import numpy as np
-import pandas as pd
-from datetime import datetime
 
 # =========================================================
 # INITIALIZE SESSION STORAGE (IN-MEMORY DATABASE)
@@ -72,7 +74,7 @@ if "loans" not in st.session_state:
 # AUTH SYSTEM (LOGIN + REGISTER)
 # =========================================================
 def auth_system():
-    st.title("🔐 Iddir Authentication System")
+    st.subheader("🔐 Authentication")
 
     tab1, tab2 = st.tabs(["Login", "Register"])
 
@@ -96,18 +98,15 @@ def auth_system():
     with tab2:
         new_user = st.text_input("New Username", key="reg_user")
         new_pass = st.text_input("Password", type="password", key="reg_pass")
-        confirm_pass = st.text_input("Confirm Password", type="password")
+        confirm_pass = st.text_input("Confirm Password")
 
         if st.button("Register"):
             if not new_user or not new_pass:
                 st.warning("Fill all fields")
-
             elif new_user in st.session_state.users:
                 st.error("Username already exists")
-
             elif new_pass != confirm_pass:
                 st.error("Passwords do not match")
-
             else:
                 st.session_state.users[new_user] = {
                     "password": new_pass,
@@ -244,42 +243,29 @@ if st.session_state.current_user is None:
     auth_system()
 
 else:
-    st.title("Iddir App Systems")
-
-    st.sidebar.write(
-        f"User: {st.session_state.current_user} "
-        f"({st.session_state.users[st.session_state.current_user]['role']})"
-    )
+    st.sidebar.write(f"User: {st.session_state.current_user}")
 
     if st.sidebar.button("Logout"):
         logout()
 
     menu = st.sidebar.radio("Navigation", [
-        "Dashboard",
-        "Members",
-        "Loans",
-        "Simulation"
+        "Dashboard", "Members", "Loans", "Simulation"
     ])
 
-    # ---------------- DASHBOARD ----------------
     if menu == "Dashboard":
         st.subheader("📊 Overview")
-
         col1, col2 = st.columns(2)
         col1.metric("Fund", f"{st.session_state.fund:.2f}")
         col2.metric("Asset", f"{st.session_state.asset:.2f}")
 
-    # ---------------- MEMBERS ----------------
     elif menu == "Members":
         add_member()
         show_members()
 
-    # ---------------- LOANS ----------------
     elif menu == "Loans":
         loan_system()
         repay_loan()
 
-    # ---------------- SIMULATION ----------------
     elif menu == "Simulation":
         st.subheader("📈 Simulation")
 
@@ -302,4 +288,4 @@ else:
 # FOOTER
 # =========================================================
 st.markdown("---")
-st.markdown("Iddir App Systems | Advanced Demo Version, @AKU-2018")
+st.markdown("Iddir App Systems | Technology Transfer Project @ Aksum University ")
