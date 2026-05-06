@@ -2,7 +2,44 @@
 # IDDIR APP SYSTEMS (FULL DEMO VERSION)
 # Login + Registration + Loans + Assets + Simulation
 ############################################################
+# =========================================================
+# WELCOME & PROJECT CONTEXT
+# =========================================================
+st.set_page_config(page_title="Iddir App Systems", layout="wide")
 
+st.title("Iddir App Systems")
+
+st.markdown("""
+### 👋 Welcome to Our Demo
+
+Welcome to the **Iddir App Systems**, a digital platform developed to transform 
+traditional Ethiopian mutual aid associations into a modern, data-driven system.
+
+This application demonstrates how **mathematical modeling, stochastic processes, 
+and community finance principles** can be translated into a practical, interactive tool 
+for managing Iddir operations — including contributions, loans, shared assets, and 
+emergency support mechanisms.
+
+---
+
+### 🎯 Project Objective
+
+- Digitize Iddir operations  
+- Improve transparency and sustainability  
+- Support decision-making through simulation and analytics  
+- Enable future expansion to mobile and enterprise systems  
+
+---
+
+### 🙏 Acknowledgment
+
+This project is developed as part of a **Technology Transfer Initiative**.  
+We gratefully acknowledge the support of the **Technology Transfer Office, Aksum University**,  
+for funding and facilitating this project.
+
+---
+
+""")
 import streamlit as st
 import numpy as np
 import pandas as pd
