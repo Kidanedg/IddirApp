@@ -207,7 +207,7 @@ if st.session_state.current_user is None:
     auth_system()
 
 else:
-    st.title("🇪🇹 Iddir App Systems")
+    st.title("Iddir App Systems")
 
     st.sidebar.write(
         f"User: {st.session_state.current_user} "
@@ -265,4 +265,4 @@ else:
 # FOOTER
 # =========================================================
 st.markdown("---")
-st.markdown("Iddir App Systems | Advanced Demo Version")
+st.markdown("Iddir App Systems | Advanced Demo Version, @AKU-2018")
