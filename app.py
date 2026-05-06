@@ -1,6 +1,6 @@
 ############################################################
-# IDDIR APP SYSTEMS (ADVANCED DEMO VERSION)
-# Includes: Login + Loans + Assets + Simulation
+# IDDIR APP SYSTEMS (FULL DEMO VERSION)
+# Login + Registration + Loans + Assets + Simulation
 ############################################################
 
 import streamlit as st
@@ -9,7 +9,7 @@ import pandas as pd
 from datetime import datetime
 
 # =========================================================
-# INITIALIZE DATABASE (SESSION)
+# INITIALIZE SESSION STORAGE (IN-MEMORY DATABASE)
 # =========================================================
 if "users" not in st.session_state:
     st.session_state.users = {
@@ -32,25 +32,55 @@ if "loans" not in st.session_state:
     st.session_state.loans = []
 
 # =========================================================
-# LOGIN SYSTEM
+# AUTH SYSTEM (LOGIN + REGISTER)
 # =========================================================
-def login():
-    st.title("🔐 Iddir Login System")
+def auth_system():
+    st.title("🔐 Iddir Authentication System")
 
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
+    tab1, tab2 = st.tabs(["Login", "Register"])
 
-    if st.button("Login"):
-        if username in st.session_state.users:
-            if st.session_state.users[username]["password"] == password:
-                st.session_state.current_user = username
-                st.success("Login successful")
-                st.rerun()
+    # LOGIN
+    with tab1:
+        username = st.text_input("Username", key="login_user")
+        password = st.text_input("Password", type="password", key="login_pass")
+
+        if st.button("Login"):
+            if username in st.session_state.users:
+                if st.session_state.users[username]["password"] == password:
+                    st.session_state.current_user = username
+                    st.success("Login successful")
+                    st.rerun()
+                else:
+                    st.error("Incorrect password")
             else:
-                st.error("Wrong password")
-        else:
-            st.error("User not found")
+                st.error("User not found")
 
+    # REGISTER
+    with tab2:
+        new_user = st.text_input("New Username", key="reg_user")
+        new_pass = st.text_input("Password", type="password", key="reg_pass")
+        confirm_pass = st.text_input("Confirm Password", type="password")
+
+        if st.button("Register"):
+            if not new_user or not new_pass:
+                st.warning("Fill all fields")
+
+            elif new_user in st.session_state.users:
+                st.error("Username already exists")
+
+            elif new_pass != confirm_pass:
+                st.error("Passwords do not match")
+
+            else:
+                st.session_state.users[new_user] = {
+                    "password": new_pass,
+                    "role": "member"
+                }
+                st.success("Registration successful")
+
+# =========================================================
+# LOGOUT
+# =========================================================
 def logout():
     st.session_state.current_user = None
     st.rerun()
@@ -65,14 +95,16 @@ def add_member():
     capacity = st.number_input("Contribution Capacity", value=100.0)
 
     if st.button("Add Member"):
-        st.session_state.members[name] = {
-            "capacity": capacity,
-            "balance": 0
-        }
-        st.success("Member added")
+        if name:
+            st.session_state.members[name] = {
+                "capacity": capacity,
+                "balance": 0
+            }
+            st.success("Member added")
 
 def show_members():
     if st.session_state.members:
+        st.subheader("📋 Members")
         st.dataframe(pd.DataFrame(st.session_state.members).T)
 
 # =========================================================
@@ -103,30 +135,27 @@ def loan_system():
             }
             st.session_state.loans.append(loan)
             st.session_state.fund -= amount
-
             st.success("Loan issued")
         else:
-            st.error("Not enough fund")
+            st.error("Insufficient fund")
 
-    # Show loans
     if st.session_state.loans:
-        st.subheader("📋 Active Loans")
+        st.subheader("📋 Loans")
         st.dataframe(pd.DataFrame(st.session_state.loans))
 
 # =========================================================
 # LOAN REPAYMENT
 # =========================================================
 def repay_loan():
-    st.subheader("💰 Loan Repayment")
+    st.subheader("💰 Repay Loan")
 
     if not st.session_state.loans:
-        st.info("No loans available")
+        st.info("No loans")
         return
 
-    loan_ids = list(range(len(st.session_state.loans)))
-    idx = st.selectbox("Select Loan", loan_ids)
+    idx = st.selectbox("Select Loan", range(len(st.session_state.loans)))
 
-    if st.button("Repay Loan"):
+    if st.button("Repay"):
         loan = st.session_state.loans[idx]
 
         if loan["status"] == "active":
@@ -142,7 +171,6 @@ def repay_loan():
 def run_simulation(F0, S0, T, r, p, A_max):
     F = F0
     S = S0
-
     history = []
 
     for t in range(T):
@@ -176,15 +204,20 @@ def run_simulation(F0, S0, T, r, p, A_max):
 # MAIN APP
 # =========================================================
 if st.session_state.current_user is None:
-    login()
+    auth_system()
+
 else:
     st.title("🇪🇹 Iddir App Systems")
 
-    st.sidebar.write(f"Logged in as: {st.session_state.current_user}")
+    st.sidebar.write(
+        f"User: {st.session_state.current_user} "
+        f"({st.session_state.users[st.session_state.current_user]['role']})"
+    )
+
     if st.sidebar.button("Logout"):
         logout()
 
-    menu = st.sidebar.radio("Menu", [
+    menu = st.sidebar.radio("Navigation", [
         "Dashboard",
         "Members",
         "Loans",
@@ -232,4 +265,4 @@ else:
 # FOOTER
 # =========================================================
 st.markdown("---")
-st.markdown("Iddir App Systems | Advanced Demo Version 🇪🇹")
+st.markdown("Iddir App Systems | Advanced Demo Version")
