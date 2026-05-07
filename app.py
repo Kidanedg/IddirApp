@@ -19,7 +19,7 @@ st.set_page_config(page_title="Iddir App Systems", layout="wide")
 st.title("Iddir App Systems")
 
 st.markdown("""
-### 👋 Welcome to Our Demo
+### Welcome to Our Demo
 
 Welcome to the **Iddir App Systems**, a digital platform developed to transform 
 traditional Ethiopian mutual aid associations into a modern, data-driven system.
@@ -31,7 +31,7 @@ emergency support mechanisms.
 
 ---
 
-### 🎯 Project Objective
+### Project Objective
 
 - Digitize Iddir operations  
 - Improve transparency and sustainability  
@@ -40,7 +40,7 @@ emergency support mechanisms.
 
 ---
 
-### 🙏 Acknowledgment
+### Acknowledgment
 
 This project is developed as part of a **Technology Transfer Initiative**.  
 We gratefully acknowledge the support of the **Technology Transfer Office, Aksum University**,  
